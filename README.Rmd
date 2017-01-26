@@ -1,0 +1,5 @@
+## First Try
+
+Maybe finally doing something right with GitHub Desktop AND RStudio AND RMarkdown..?
+
+And here is the link to my [course diary](https://tinalauronen.github.io/IODS-project/).

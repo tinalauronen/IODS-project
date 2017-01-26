@@ -1,5 +1,0 @@
-##  First test with RStudio
-
-This is my first try to create something using RStudio and RMarkdown. Still a bit confused, but going on...
-
-Here is the link to my [course diary](https://tinalauronen.github.io/IODS-project/). I wonder if it is working, because I don't think I have done anything for it yet.

@@ -1,5 +1,4 @@
-
-# About the project
+# Chapter 1: About the project
 
 The course description is available in mooc.helsinki.fi
 

@@ -119,11 +119,11 @@ $(document).ready(function () {
 </div>
 
 
-<div id="rstudio-excercise-3-logistic-regression" class="section level1">
-<h1>RStudio Excercise 3: Logistic regression</h1>
+<div id="chapter-3-logistic-regression" class="section level1">
+<h1>Chapter 3: Logistic regression</h1>
 <div id="the-data" class="section level2">
 <h2>The data</h2>
-<p>The data set used in this exercise is joined dataset about student alcohol consumption. The data and some information about it is available <a href="https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION">here</a>. The data set is joined and motified in the previous data wrangling exercise. The RScript is available <a href>here</a>. We start by reading the dataset from the file.</p>
+<p>The data set used in this exercise is joined dataset about student alcohol consumption. The data and some information about it is available <a href="https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION">here</a>. The data set is joined and motified in the previous data wrangling exercise. The RScript is available <a href="https://github.com/tinalauronen/IODS-project/blob/master/data/create_alc.R">here</a>. We start by reading the dataset from the file.</p>
 <pre class="r"><code>alc &lt;- read.csv(&quot;/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/alc.csv&quot;)</code></pre>
 <p>In the joined data set there are 35 variables and N = 382. The variable names are the following:</p>
 <pre class="r"><code>colnames(alc)</code></pre>
@@ -289,7 +289,7 @@ loss_func(class = alc$high_use, prob = alc$probability)</code></pre>
 <pre class="r"><code>library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = r_m, K = 10)
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2356021</code></pre>
+<pre><code>## [1] 0.2277487</code></pre>
 <p>The cross-validation exercise in DataCamp resulted error value of 0.26. Here the error value is approximately 0.23 which means that our model is better.</p>
 </div>
 </div>

@@ -2,7 +2,7 @@
 
 ## The data
 
-The data set used in this exercise is joined dataset about student alcohol consumption. The data and some information about it is available [here](https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION). The data set is joined and motified in the previous data wrangling exercise. The RScript is available [here](). We start by reading the dataset from the file.
+The data set used in this exercise is joined dataset about student alcohol consumption. The data and some information about it is available [here](https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION). The data set is joined and motified in the previous data wrangling exercise. The RScript is available [here](https://github.com/tinalauronen/IODS-project/blob/master/data/create_alc.R). We start by reading the dataset from the file.
 
 ```{r}
 alc <- read.csv("/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/alc.csv")

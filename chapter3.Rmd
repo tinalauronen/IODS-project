@@ -1,0 +1,127 @@
+# Chapter 3: Logistic regression
+
+## The data
+
+The data set used in this exercise is joined dataset about student alcohol consumption. The data and some information about it is available [here](https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION). The data set is joined and motified in the previous data wrangling exercise. The RScript is available [here](). We start by reading the dataset from the file.
+
+```{r}
+alc <- read.csv("/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/alc.csv")
+```
+
+In the joined data set there are 35 variables and N = 382. The variable names are the following:
+
+```{r}
+colnames(alc)
+```
+
+We also need some libraries to conduct the analyses.
+
+```{r}
+library(tidyr); library(dplyr); library(ggplot2); library(gmodels)
+```
+
+## The variables and hyphothesis
+
+The dependent variable is *high alcohol consumption*. It is a dichotomy variable (true/false) counted from the variables measuring weekly and daily alcohol consumption (scale from 1 - very low to 5 - very high). If the average of those alcohol consumption variables is more than 2, the respondent is classified in the high consumption category. From the 382 respondents 114 are in the high usage category and 268 are not.
+
+The independent (explanatory) variables chosen to this analysis are *sex*, *mother's education*, *going out with friends* and *romantic relationship*. 
+
+## Distributions and preliminary analysis
+
+There are 198 females and 184 males in the data. The assumption is that males consume more alcohol. *Mother's education* is measured on a five step scale (0 = no education, 1 = primary education, 2 = 5th or 9th grade, 3 = secondary education, 4 = higher education). The assumption is that the more educated the mother is, the less the student uses alcohol.
+
+*Going out with friends* is measured by a scale from 1 (very low) to 5 (very heigh). The assumption is that the more student goes out with friends, the more s/he uses alcohol.
+*Romantic relationship* is measured as a simple dichotomy, yes or no. The assumption is that romantic relationship decreases the alcohol consumption.
+
+The connection between *sex* and *high alcohol consumption* is easiest to explore by cross tabulation. Below we can see, that 39.1 % of male respondents are considered high users, compared to only 21.2 % of females. Of all high users 63.2 % are male and 36.8 % female. The results are statistically significant (p<0.001).
+
+```{r}
+CrossTable(alc$high_use, alc$sex, prop.r = TRUE, prop.c = TRUE, prop.t = FALSE, prop.chisq = FALSE, chisq = TRUE)
+```
+
+To present the distribution of the other independent variables and their connections to the dependent variable, we use simple bar plots.
+
+In Figure 1 there is the distribution of variable *mother's education* presented. By adding the high alcohol use variable in the figure, it is possible to see that there is some connection between the variables: compared to primary education it is less likely that children of bit more educated mothers are less likely high users of alcohol. Secondary education increses the share of high drinkers, but again the higher education seems to have connection to less usage.
+
+```{r}
+qplot(Medu, data = alc, color = high_use, main = "Figure 1: Mother's education")
+```
+
+Figure 2 presents the frequencies of the variable *going out with friends* and its connections to high alcohol usage. As assumed, the more students go out with friends the more likely they use more alcohol.
+
+```{r}
+qplot(goout, data = alc, color = high_use, main = "Figure 2: Going out with friends")
+```
+
+In Figure 3 there is no clear, visible diffenrence in high alcohol consumption an romantic relationships because the amount of students not in a relationship is so much higher. 
+
+```{r}
+qplot(romantic, data = alc, color = high_use, main = "Figure 3: Having romantic relationship")
+```
+
+Simple cross tabulations or bar plot are not sufficient methods to approach a question as complicated as high alcohol consumption. It is necessary to move forward to more sophisticated methods.
+
+## Logistic regression analysis
+
+Using the variables presented above we conduct a logistic regression analysis to explore high alcohol usage. First we make the model and print the summary of it, then we compute and print odds ratios (OR) and confidence intervals (CI).
+
+```{r}
+r_model <- glm(high_use ~ sex + Medu + goout + romantic, data = alc, family = "binomial")
+summary.glm(r_model)
+OR <- coef(r_model) %>% exp
+CI <- confint(r_model) %>% exp
+cbind(OR, CI)
+```
+
+From the coefficient table from the summary we can see, that only *sex* and *going out with friends* are statistically significant variables explaining the high alcohol usage. From the OR table we are able to interpret that if a student is a male (versus being a female) he is 2.4 times more likely a high user. *Going out with friends* adds the probability to be a high user as well, but due to the measurement scale of the variable the interpretation is not as straightforward.
+
+If not considering the statistical significance levels it is possible to simplify the interpretation of the OR's: If the OR is less than 1, it is less likely to be a high user. This would mean in our case that more educated mother and being in a romantic relationship would decrese the probability to use more alcohol. Insted, being a male and going out with friends a lot increses that probability - and the effect is stronger as well. These results are in line with the preassumptions - but there is no reason to claim that in case of *mother's education* and *romantic relationship*.
+
+## Predictions
+
+First we create a new regression model with the statistically significant variables, *sex* and *going out with friends*  from the previous model. Then we make a new variable: first one that contains the prediction, then one that predicts high alcohol usage.
+
+```{r}
+r_m <- glm(high_use ~ sex + goout, data = alc, family = "binomial")
+probabilities <- predict(r_m, type = "response")
+alc <- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = (probability > 0.5))
+```
+
+Then we make a table of the original variable, *high alcohol usage*, and the variable predicting it.
+
+```{r}
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+
+...and here is the same comparison in a graphical form:
+
+```{r}
+g <- ggplot(alc, aes(x = probability, y = high_use, col = prediction))
+g + geom_point()
+```
+
+Here we compute the proportion of inaccurately classified individuals. First we create a function to claculate the training error, the we do the actual math.
+
+```{r}
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+
+When testing the function by giving the parameter *prob* values 0 or 1 (meaning that none of our respondents are high users or that all of them are) the result of the actual variable *probability* is better (the value of *loss_func* is smaller). By plain guessing it would have gone (more) wrong.
+
+## K-fold cross-validation
+
+Finally we test our model with K-fold cross-validation.
+
+```{r}
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = r_m, K = 10)
+cv$delta[1]
+```
+
+The cross-validation exercise in DataCamp resulted error value of 0.26. Here the error value is approximately 0.23 which means that our model is better.

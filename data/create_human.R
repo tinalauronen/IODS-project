@@ -56,5 +56,7 @@ str(gii)
 human <- inner_join(hd, gii, by = "Country")
 
 names(human)
+str(human)
+dim(human)
 
 write_csv(human, "/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/human.csv")

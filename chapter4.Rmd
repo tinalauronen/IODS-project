@@ -1,0 +1,131 @@
+# Chapter 4: Clustering and classification
+
+## Data
+
+In this exercise we use dataset "Boston" from the MASS package for R. First we take a look at the structure and dimensions of the data. The data has 14 variables and 506 observations. Detailed information about variables in found [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html). Apparently the observations are towns of Boston.
+
+```{r, echo=FALSE}
+library(MASS)
+library(corrplot)
+library(tidyverse)
+library(ggplot2)
+data("Boston")
+```
+
+```{r, echo=FALSE}
+str(Boston)
+dim(Boston)
+```
+
+## Graphical overview and summaries
+
+The graphical overview of all the variables does not tell much.
+
+```{r, echo=FALSE}
+pairs(Boston)
+```
+
+Instead we take a look at the summaries of the variables:
+
+```{r, echo=FALSE}
+summary(Boston)
+```
+
+Then we check the correlations between the variables. There are strong negative correlations between *weighted mean of distances to five Boston employment centres* and *proportion of non-retail business acres per town*, *nitrogen oxides concentration (parts per 10 million)* and *proportion of owner-occupied units built prior to 1940*. Strong negative correlation is found as well between *lower status of the population (percent)* and *median value of owner-occupied homes in \$1000s*. Strong negative correlations are found especially between *index of accessibility to radial highways* and *full-value property-tax rate per \$10,000*.
+
+```{r, echo=FALSE}
+cor_matrix <- cor(Boston)
+corrplot(cor_matrix, method = "circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6 )
+```
+
+## Modifying the dataset
+
+First we standardize the dataset and print out the summaries of the scaled data. From the summary we can see, that the means of the scaled variables are zero. This means that the variables are centered.
+
+```{r, echo=FALSE}
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled)
+```
+
+From the scaled variable of the *per capita crime rate by town* we create a categorical variable of the crime rate. We use quantiles as a base of categorization. As a result we get a variable that divides the towns of Boston to *low*, *medium low*, *medium high* and *high* crime rates.
+
+```{r, echo=FALSE}
+scaled_crim <- boston_scaled$crim
+bins <- quantile(scaled_crim)
+crime <- cut(scaled_crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+table(crime)
+```
+Finally we divide the dataset to **train** (80 per cent) and **test** (20 per cent) datasets.
+
+```{r, echo=FALSE}
+n <- nrow(boston_scaled)
+ind <- sample(n, size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+```
+
+## Linear Discriminant Analysis (LDA)
+
+Next we conduct LDA on the **train set** using the categorical crime rate variable as target variable. As a result we draw a LDA (bi)plot.
+
+```{r, echo=FALSE}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choises = c(1,2)){
+    heads <- coef(x)
+    arrows(x0 = 0, y0 = 0,
+           x1 = myscale * heads[,choises[1]],
+           y1 = myscale * heads[,choises[2]], col = color, length = arrow_heads)
+    text(myscale * heads[,choises], labels = row.names(heads),
+         cex = tex, col = color, pos = 3)
+}
+
+lda.arrows
+
+classes <- as.numeric(train$crime)
+
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+
+lda.arrows(lda.fit, myscale = 1)
+```
+
+## Predicting the classes with LDA model
+
+The categorical crime rate variable is removed from the **test set**. Now we predict the classes in the test data with the LDA model. From the crosstabulation on the correct and predicted obseravtions we are able to see that the prediction is mainly usable. The high rates all all prideicted right, and almost all the medium high observations as well. The medium low predictions are the most problematic.
+
+```{r, echo=FALSE}
+lda.pred <- predict(lda.fit, newdata = test)
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+## K-means
+
+Finally we reload the Boston dataset and standardize it. Then we calculate the distances between the observations. Summary of the Euclidean distances is presented below.
+
+```{r, echo=FALSE}
+data(Boston)
+stand_boston <- scale(Boston)
+dist_eu <- dist(stand_boston)
+summary(dist_eu)
+```
+
+Then we run k-means algorithm, use WCSS to find out the optimal number of clusters, and run the algorithm again. First we try k-means with four clusters. From the WCSS plot we find out that the optimal number of clusters is two.
+
+```{r, echo=FALSE}
+km <- kmeans(dist_eu, centers = 4)
+pairs(Boston, col = km$cluster)
+set.seed(123)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(dist_eu, k)$tot.withinss})
+plot(1:k_max, twcss, type = "b")
+km <- kmeans(dist_eu, centers = 2)
+pairs(Boston, col = km$cluster)
+```
+
+From the later figure it would be possible to ivestigate the observations divided to two clusters according to every variable within the analysis. Personally I do not find this kind of giant figure matrixes very informative, bacause their readability is very low. Maybe this would be helpful when making decisions of further analysis. If the colours in the figure are very mixed, the variables are not very significant considering the clusters. If the colours seems to be well separated, the variables in the figure are affecting in the formulation of the clusters.
+

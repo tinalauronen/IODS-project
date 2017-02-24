@@ -1,0 +1,120 @@
+# Chapter 5: Dimensionality reduction techniques
+
+## The data
+
+The data used in this analysis is a combination of two data set collected by UNDP. There are more information of the data in this [web page](http://hdr.undp.org/en/content/human-development-index-hdi). The observations are countries (total 155) and variables used here are *Life expectancy at birth*, *Expected years of schooling*, *Gross national income (GNI) per capita*, *Maternal mortality ratio*, *Adolescent birth rate*, *Share of seats in parliament* (female), *Population with at least some secondary education* (female/male ratio) and *Labour force participation rate* (female/male ratio).
+
+Some libraries are needed to conduct the analysis.
+
+```{r, echo=FALSE}
+library(dplyr)
+library(FactoMineR)
+library(ggplot2)
+library(tidyr)
+library(corrplot)
+```
+
+First we read the data and explore it. As supposed, there are 155 observations (countries) and 8 variables.
+
+```{r, echo=FALSE}
+human <- read.csv("/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/human.csv", row.names = 1)
+dim(human)
+str(human)
+```
+
+## Overview
+
+Summary of the data and explanations for the variable names:
+
+```{r, echo=FALSE}
+summary(human)
+```
+
+| Label                   | Variable                                                              |
+|-------------------------| ----------------------------------------------------------------------|
+| Educ_sec_FM_ratio       | Population with at least some secondary education (female/male ratio) |
+| Labour_FM_ratio         | Labour force participation rate (female/male ratio)                   |
+| Educ_e                  | Expected years of schooling                                           |
+| Life_e                  | Life expectancy at birth                                              |
+| GNI                     | Gross national income (GNI) per capita                                |
+| MM_ratio                | Maternal mortality ratio                                              |
+| Ad_birth_rate           | Adolescent birth rate                                                 |
+| Rep_parl                | Share of seats in parliament (female)                                 |
+
+
+
+```{r, echo=FALSE}
+gather(human) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free")
+```
+
+As expected, the observations (countries) differ each other radically. It is more interesting to investigate correlations between the variables. Strong positive correlations are found between *Expected years of schooling* and *Life expectancy at birth*, and between *Maternal mortality ratio* and *Adolescent birth rate*. An obvious strong negative correlation is found between *Life expectancy at birth* and *Maternal mortality ratio*. All in all the pattern looks quite clear: the more educated women (in addition to mens' education), the higher education expectancy, life expectancy and GNI and lower maternal mortality and adolescent birth rate.
+
+```{r, echo=FALSE}
+cor_matrix <- cor(human)
+corrplot(cor_matrix, method = "circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6 )
+```
+
+## Principal component analysis (PCA)
+
+Then we conduct a principal component analysis.
+
+```{r, echo=FALSE}
+pca_human <- prcomp(human)
+summary(pca_human)
+biplot(pca_human, choices = 1:2, cex = c(0.5, 1))
+```
+
+The results are almost unreadable, hopefully because of use of unstandardized data. We must scale the data and conduct the analysis again.
+
+## Principal component analysis (PCA) with standardized data
+
+First we scale the data and check the summary of it.
+
+```{r, echo=FALSE}
+human_std <- scale(human)
+summary(human_std)
+```
+
+The means are 0.0 so we can move on to PCA analysis.
+
+```{r, echo=FALSE}
+pca_human_std <- prcomp(human_std)
+summary(pca_human_std)
+biplot(pca_human_std, choices = 1:2, cex = c(0.5, 1))
+```
+
+Now the results make sense and are much easier to interpret. From the summary we can see, that the first principal component (PC1) covers 53.6 per cent of the variation. PC2 covers 16.2 per cent. With unstandardized data some of the variables dominated the analysis with their scale differing the others, but now be are able to see how the countries are located according to principal components.
+
+From the arrows of the biplot we can interpret the content of the principal components: PC2 consists of variables considering *Labour force participation rate (female/male ratio)* and *Share of seats in parliament (female)*. It can be interpret as some kind of gender equality component. The more important PC1 consists on the other hand *Maternal mortality ratio* and *Adolescent birth rate*, and on the other hand *Expected years of schooling*, *Life expectancy at birth*, *Gross national income (GNI) per capita* and *Population with at least some secondary education (female/male ratio)*. The variables are more related to health issues, especially to women's health, and the variables correlated to them. 
+
+According to this analysis the old thesis about girls' education as the best investment for overall well-being gets support.
+
+## MCA analysis with tea data
+
+For MCA analysis we load the "Tea" data set from R package "FactoMineR". First we explore the data set. There are many variables we are not interested in, so we reduce the amount of them.
+
+```{r, echo=FALSE}
+data("tea")
+dim(tea)
+str(tea)
+summary(tea)
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+tea_time <- select(tea, one_of(keep_columns))
+summary(tea_time)
+str(tea_time)
+gather(tea_time) %>% ggplot(aes(value)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) + facet_wrap("key", scales = "free")
+```
+
+Then we conduct a multiple correspondence analysis MCA, print the summary of it and visualize it.
+
+```{r, echo=FALSE}
+mca <- MCA(tea_time, graph = FALSE)
+summary(mca)
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+The MDA biplot can be interpretet as a taste map of tea consumption. The first dimension tells us about experimentality or safety of the respondents's tea drinking habits: on the other side of the scale there are people who drink Earl Grey, buy their tea from the chain store in tea bags (and this is very common, close to zero) and on the other side there are specialized tea shops and unpackaged green or black tea. 
+
+The second dimension is a bit harder to interpret, but on the upper side of the figure there are some traces of omnivorousness. Everything goes: the chain stores and the tea shops, unpacked and teapacks, and even "other" things than milk or lemon to add to tea. On the lower part of the figure the choises can be interpret more traditional.
+
+As an overall interpretation it is easiest to say that the closer to the zero point of the two dimensions a variable is, the more common or "mainstream" it is.

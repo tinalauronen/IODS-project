@@ -109,4 +109,10 @@ human_ <- dplyr::select(human_, -Country)
 
 dim(human_)
 
-write.csv(human, "/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/human.csv", row.names = TRUE)
+write.csv(human_, "/Users/tlaurone/GitHub/tinalauronen/IODS-project/data/human.csv", row.names = TRUE)
+
+?write.csv
+?read.csv
+
+
+install.packages("FactoMineR")
